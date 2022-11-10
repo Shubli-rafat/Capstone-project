@@ -55,7 +55,7 @@ jobs:
           command: |
             docker build --tag=shublirafat/udacityshubli .
             docker image ls
-            docker login -u shublirafat -p udacity123
+            docker login -u shublirafat -p $password
             docker push shublirafat/udacityshubli
   deploy-eks:
     docker:
