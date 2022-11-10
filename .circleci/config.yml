@@ -51,13 +51,13 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Build application Docker image
+          name: build and push to Docker
           command: |
             docker build --tag=shublirafat/udacityshubli .
             docker image ls
             docker login -u shublirafat -p $DOCKER_PASSWORD
             docker push shublirafat/udacityshubli
-  deploy-app-eks:
+  deploy-eks:
     docker:
       - image: amazon/aws-cli
       
@@ -81,26 +81,26 @@ jobs:
             mv ./kubectl /usr/local/bin/kubectl
       
       - run:
-          name: Connect cluster
+          name: Connect to cluster
           command: |
             aws eks --region us-east-1 update-kubeconfig --name udacityshubli
       - run:
           name: Deploy cluster
           command: |
-            kubectl apply -f mydeployment.yml 
+            kubectl apply -f deploy.yml 
             kubectl get svc
             kubectl get pods
             
       - run:
-          name: rollout deployment 
+          name: rollout 
           command: |
             kubectl rollout status deployment.apps/udacityshubli
             kubectl get all              
            
-#workflows:
-    #jobs:
-      #- build
-      #- build-push-docker-image:
-          #requires: [build]            
-      #- deploy-app-eks:
-          #requires: [build-push-docker-image]
+workflows:
+    jobs:
+      - build
+      - build-push-docker-image:
+          requires: [build]            
+      - deploy-eks:
+          requires: [build-push-docker-image]
