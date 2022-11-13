@@ -3,6 +3,10 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2.1
+orbs:
+  docker: circleci/docker@1.6.0
+  aws-eks: circleci/aws-eks@0.2.3
+  kubernetes: circleci/kubernetes@0.12.0
 jobs:
   build:
     docker:
@@ -55,7 +59,7 @@ jobs:
           command: |
             docker build --tag=shublirafat/udacityshubli .
             docker image ls
-            docker login -u shublirafat -p $password
+            docker login -u shublirafat -p udacity123
             docker push shublirafat/udacityshubli
   deploy-eks:
     docker:
