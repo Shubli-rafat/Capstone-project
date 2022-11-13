@@ -84,11 +84,11 @@ jobs:
     docker:
       - image: amazon/aws-cli
     # executor: aws-eks/python3
-    # parameters:
-    #   cluster-name:
-    #     description: |
-    #       Name of the EKS cluster
-    #     type: string
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
     steps:
       - checkout
       - aws-eks/update-kubeconfig-with-authenticator:
