@@ -81,7 +81,7 @@ jobs:
             docker login -u shublirafat -p udacity123
             docker push shublirafat/udacityshubli
   create-deployment:
-    executor: aws-eks/python3.10
+    executor: aws-eks/python3
     parameters:
       cluster-name:
         description: |
