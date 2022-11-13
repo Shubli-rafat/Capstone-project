@@ -8,7 +8,78 @@ orbs:
   aws-eks: circleci/aws-eks@2.2.0
   kubernetes: circleci/kubernetes@0.12.0
 
+# jobs:
+#   create-deployment:
+#     executor: aws-eks/python3.10
+#     parameters:
+#       cluster-name:
+#         description: |
+#           Name of the EKS cluster
+#         type: string
+#     steps:
+#       - checkout
+#       - aws-eks/update-kubeconfig-with-authenticator:
+#           cluster-name: << parameters.cluster-name >>
+#           install-kubectl: true
+#       - kubernetes/create-or-update-resource:
+#           resource-file-path: "tests/nginx-deployment/deployment.yaml"
+#           resource-name: "deployment/nginx-deployment"
+#           get-rollout-status: true
+#           show-kubectl-command: true
 jobs:
+  build:
+    docker:
+      # Use the same Docker base as the project
+      - image: python:3.7.3-stretch
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            make install
+            # Install hadolint
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
+            chmod +x /bin/hadolint
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # run lint!
+      - run:
+          name: run lint
+          command: |
+            . venv/bin/activate
+            make lint
+  
+  build-push-docker-image:
+    docker:
+      - image: docker:17.05.0-ce-git
+    
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: build and push to Docker
+          command: |
+            docker build --tag=shublirafat/udacityshubli .
+            docker image ls
+            docker login -u shublirafat -p udacity123
+            docker push shublirafat/udacityshubli
   create-deployment:
     executor: aws-eks/python3.10
     parameters:
@@ -26,118 +97,63 @@ jobs:
           resource-name: "deployment/nginx-deployment"
           get-rollout-status: true
           show-kubectl-command: true
-# jobs:
-#   build:
-#     docker:
-#       # Use the same Docker base as the project
-#       - image: python:3.7.3-stretch
-
-#     working_directory: ~/repo
-
-#     steps:
-#       - checkout
-
-#       # Download and cache dependencies
-#       - restore_cache:
-#           keys:
-#             - v1-dependencies-{{ checksum "requirements.txt" }}
-#             # fallback to using the latest cache if no exact match is found
-#             - v1-dependencies-
-
-#       - run:
-#           name: install dependencies
-#           command: |
-#             python3 -m venv venv
-#             . venv/bin/activate
-#             make install
-#             # Install hadolint
-#             wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
-#             chmod +x /bin/hadolint
-#       - save_cache:
-#           paths:
-#             - ./venv
-#           key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-#       # run lint!
-#       - run:
-#           name: run lint
-#           command: |
-#             . venv/bin/activate
-#             make lint
-  
-#   build-push-docker-image:
-#     docker:
-#       - image: docker:17.05.0-ce-git
-    
-#     working_directory: ~/repo
-#     steps:
-#       - checkout
-#       - setup_remote_docker
-#       - run:
-#           name: build and push to Docker
-#           command: |
-#             docker build --tag=shublirafat/udacityshubli .
-#             docker image ls
-#             docker login -u shublirafat -p udacity123
-#             docker push shublirafat/udacityshubli
-#   deploy-eks:
-#     docker:
-#       - image: amazon/aws-cli
+  deploy-eks:
+    docker:
+      - image: amazon/aws-cli
       
-#     working_directory: ~/repo
-#     steps:
-#       - checkout
-#       - restore_cache:
-#           keys:
-#             - v1-dependencies-{{ checksum "requirements.txt" }}
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
       
-#       - run: 
-#           name: set region 
-#           command: | 
-#             aws configure set default.region us-east-1
-#       - run: 
-#           name: Install kubectl
-#           command: |
-#             yum install -y wget
-#             wget -O kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-#             chmod +x ./kubectl
-#             mv ./kubectl /usr/local/bin/kubectl
+      - run: 
+          name: set region 
+          command: | 
+            aws configure set default.region us-east-1
+      - run: 
+          name: Install kubectl
+          command: |
+            yum install -y wget
+            wget -O kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+            chmod +x ./kubectl
+            mv ./kubectl /usr/local/bin/kubectl
       
-#       - run:
-#           name: Connect to cluster
-#           command: |
-#             aws eks --region us-east-1 update-kubeconfig --name udacityshubli
-#       - run:
-#           name: Deploy cluster
-#           command: |
-#             kubectl apply -f deploy.yml 
-#             kubectl get svc
-#             kubectl get pods
+      - run:
+          name: Connect to cluster
+          command: |
+            aws eks --region us-east-1 update-kubeconfig --name udacityshubli
+      - run:
+          name: Deploy cluster
+          command: |
+            kubectl apply -f deploy.yml 
+            kubectl get svc
+            kubectl get pods
             
-#       - run:
-#           name: rollout 
-#           command: |
-#             kubectl rollout status deployment.apps/udacityshubli
-#             kubectl get all              
+      - run:
+          name: rollout 
+          command: |
+            kubectl rollout status deployment.apps/udacityshubli
+            kubectl get all              
            
 workflows:
-  deployment:
+  default:
     jobs:
-      # - build
-      # - build-push-docker-image:
-      #     requires: [build]   
-      # - aws-eks/create-cluster:
-      #     cluster-name: udacityshubli         
+      - build
+      - build-push-docker-image:
+          requires: [build]   
+      - aws-eks/create-cluster:
+          cluster-name: udacityshubli  
+            requires: [build-push-docker-image]        
       # - deploy-eks:
       #     requires: [build-push-docker-image]
-      - aws-eks/create-cluster:
-          cluster-name: udacityshubli
       - create-deployment:
           cluster-name: udacityshubli
           requires:
             - aws-eks/create-cluster
       - aws-eks/update-container-image:
-          cluster-name: eudacityshubli
+          cluster-name: udacityshubli
           resource-name: "deployment/nginx-deployment"
           container-image-updates: "nginx=nginx:1.9.1"
           requires:
