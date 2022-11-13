@@ -120,7 +120,7 @@ jobs:
 #             kubectl get all              
            
 workflows:
-  default:
+  deployment:
     jobs:
       # - build
       # - build-push-docker-image:
