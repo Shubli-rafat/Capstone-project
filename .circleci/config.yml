@@ -7,9 +7,10 @@ orbs:
   docker: circleci/docker@1.6.0
   aws-eks: circleci/aws-eks@2.2.0
   kubernetes: circleci/kubernetes@0.12.0
+
 jobs:
   create-deployment:
-    executor: aws-eks/python3
+    executor: aws-eks/python3.10
     parameters:
       cluster-name:
         description: |
