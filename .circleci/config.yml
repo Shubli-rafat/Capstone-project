@@ -80,25 +80,25 @@ jobs:
             docker image ls
             docker login -u shublirafat -p udacity123
             docker push shublirafat/udacityshubli
-  create-deployment:
-    docker:
-      - image: amazon/aws-cli
-    # executor: aws-eks/python3
-    parameters:
-      cluster-name:
-        description: |
-          Name of the EKS cluster
-        type: string
-    steps:
-      - checkout
-      - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: << parameters.cluster-name >>
-          install-kubectl: true
-      - kubernetes/create-or-update-resource:
-          resource-file-path: "tests/nginx-deployment/deployment.yaml"
-          resource-name: "deployment/nginx-deployment"
-          get-rollout-status: true
-          show-kubectl-command: true
+  # create-deployment:
+  #   docker:
+  #     - image: amazon/aws-cli
+  #   # executor: aws-eks/python3
+  #   parameters:
+  #     cluster-name:
+  #       description: |
+  #         Name of the EKS cluster
+  #       type: string
+  #   steps:
+  #     - checkout
+  #     - aws-eks/update-kubeconfig-with-authenticator:
+  #         cluster-name: << parameters.cluster-name >>
+  #         install-kubectl: true
+  #     - kubernetes/create-or-update-resource:
+  #         resource-file-path: "tests/nginx-deployment/deployment.yaml"
+  #         resource-name: "deployment/nginx-deployment"
+  #         get-rollout-status: true
+  #         show-kubectl-command: true
   deploy-eks:
     docker:
       - image: amazon/aws-cli
@@ -131,8 +131,7 @@ jobs:
           command: |
             kubectl apply -f deploy.yml 
             kubectl get svc
-            kubectl get pods
-            
+            kubectl get pods      
       - run:
           name: rollout 
           command: |
@@ -142,14 +141,15 @@ jobs:
 workflows:
   default:
     jobs:
-      # - build
-      # - build-push-docker-image:
-      #     requires: [build]   
-      # - aws-eks/create-cluster:
-      #     cluster-name: udacityshubli  
-      #     requires: [build-push-docker-image]        
-      - deploy-eks
-          # requires: [build-push-docker-image]
+      - build
+      - build-push-docker-image:
+          requires: [build]   
+      - aws-eks/create-cluster:
+          cluster-name: udacityshubli  
+          requires: [build-push-docker-image]        
+      - deploy-eks:
+          requires:
+          - aws-eks/create-cluster
       # - create-deployment:
       #       cluster-name: udacityshubli
       #       requires:
