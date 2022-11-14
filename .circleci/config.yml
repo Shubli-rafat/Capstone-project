@@ -148,7 +148,7 @@ workflows:
       # - aws-eks/create-cluster:
       #     cluster-name: udacityshubli  
       #     requires: [build-push-docker-image]        
-      - deploy-eks:
+      - deploy-eks
           # requires: [build-push-docker-image]
       # - create-deployment:
       #       cluster-name: udacityshubli
