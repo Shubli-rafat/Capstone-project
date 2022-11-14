@@ -150,17 +150,17 @@ workflows:
           requires: [build-push-docker-image]        
       # - deploy-eks:
       #     requires: [build-push-docker-image]
-      - create-deployment:
-          cluster-name: udacityshubli
-          requires:
-            - aws-eks/create-cluster
-      - aws-eks/update-container-image:
-          cluster-name: udacityshubli
-          resource-name: "deployment/nginx-deployment"
-          container-image-updates: "nginx=nginx:1.9.1"
-          requires:
-            - create-deployment
-      - aws-eks/delete-cluster:
-          cluster-name: udacityshubli
-          requires:
-              - aws-eks/update-container-image
+      # - create-deployment:
+      #     cluster-name: udacityshubli
+      #     requires:
+      #       - aws-eks/create-cluster
+      # - aws-eks/update-container-image:
+      #     cluster-name: udacityshubli
+      #     resource-name: "deployment/nginx-deployment"
+      #     container-image-updates: "nginx=nginx:1.9.1"
+      #     requires:
+      #       - create-deployment
+      # - aws-eks/delete-cluster:
+      #     cluster-name: udacityshubli
+      #     requires:
+      #         - aws-eks/update-container-image
